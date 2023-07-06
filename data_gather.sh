@@ -27,6 +27,7 @@ readonly GLOBAL_DATETIME GLOBAL_SCRIPT_DIR GLOBAL_SCRIPT_NAME GLOBAL_SCRIPT_VERS
 command_output=""
 warning_flag=0
 error_flag=0
+
 # ====================================================================
 # INFORMATION COLLECTION VARIABLES
 # ====================================================================
@@ -68,6 +69,7 @@ commands=("ifconfig -a"
 "lscpu"
 "blockdev --report"
 "dmidecode")
+
 # ====================================================================
 # FUNCTIONS
 # ====================================================================
@@ -77,37 +79,40 @@ commands=("ifconfig -a"
 # None
 #####
 show_version() {
-echo
-echo "Gather System Info"
-echo "${GLOBAL_SCRIPT_NAME}"
-echo "Version: ${GLOBAL_SCRIPT_VERSION}"
-echo "Build: ${GLOBAL_SCRIPT_BUILD_ID}"
-echo "Copyright (c) 2022 SAS Institute Inc."
-echo "Unpublished - All Rights Reserved."
-echo
-exit 0
+	echo
+	echo "Gather System Info"
+	echo "${GLOBAL_SCRIPT_NAME}"
+	echo "Version: ${GLOBAL_SCRIPT_VERSION}"
+	echo "Build: ${GLOBAL_SCRIPT_BUILD_ID}"
+	echo "Copyright (c) 2022 SAS Institute Inc."
+	echo "Unpublished - All Rights Reserved."
+	echo
+	exit 0
 }
+
 #####
 # Print usage info and exit.
 # Parameters:
 # None
 #####
 show_usage() {
-echo
-echo "<<USAGE>>"
-echo " ${GLOBAL_SCRIPT_NAME} (parameter)"
-echo
-echo " Optional parameters:"
-echo " -h, --help Show usage info."
-echo " -v, --version Show version info."
-echo
-echo " Function: Gather and package a select set of information about a system."
-echo " Results are packaged into a file named gather_info_[HOSTNAME]_[DATE]-[TIME].tar.gz."
-echo
-echo " Supported operating systems: RHEL and CentOS 6, 7 and 8."
-echo
-exit 0
+	echo
+	echo "<<USAGE>>"
+	echo " ${GLOBAL_SCRIPT_NAME} (parameter)"
+	echo
+	echo " Optional parameters:"
+	echo " -h, --help Show usage info."
+	echo " -v, --version Show version info."
+	echo
+	echo " Function: Gather and package a select set of information about a system."
+	echo " Results are packaged into a file named gather_info_[HOSTNAME]_[DATE]-[TIME].tar.gz."
+	echo
+	echo " Supported operating systems: RHEL and CentOS 6, 7 and 8."
+	echo
+	exit 0
 }
+
+
 #####
 # Run command and catch/output errors to the log.
 # Parameters:
@@ -115,14 +120,16 @@ exit 0
 # $2 - (optional) Additional command arguments
 #####
 run_command() {
-local command="$1"
-local args="$2"
-( bash -c "${command} ${args}" ) &>> "${GLOBAL_LOG_FILE}" & wait "$!"
-if [[ "$?" -gt 0 ]]; then
-warning_flag=1
-return 1
-fi
+	local command="$1"
+	local args="$2"
+	( bash -c "${command} ${args}" ) &>> "${GLOBAL_LOG_FILE}" & wait "$!"
+
+	if [[ "$?" -gt 0 ]]; then
+		warning_flag=1
+		return 1
+	fi
 }
+
 #####
 # Check OS and version.
 # Parameters:
@@ -147,57 +154,63 @@ check_os() {
 	fi
 }
 
+
 #####
 # Create directory if it doesn't exist.
 # Parameters:
 # $1 - Directory to create
 #####
 create_dir() {
-local dir_name="${1%/}/"
-if [[ ! -d "${dir_name}" ]]; then
-echo "[INFO]: Creating destination directory [${dir_name}]." >> "${GLOBAL_LOG_FILE}"
-run_command "mkdir -p ${dir_name}" || echo "[WARN]: Copy failed. Unable to create directory [${dir_name}]." >> "${GLOBAL_LOG_FILE}"
-fi
+	local dir_name="${1%/}/"
+	if [[ ! -d "${dir_name}" ]]; then
+		echo "[INFO]: Creating destination directory [${dir_name}]." >> "${GLOBAL_LOG_FILE}"
+		run_command "mkdir -p ${dir_name}" || echo "[WARN]: Copy failed. Unable to create directory [${dir_name}]." >> "${GLOBAL_LOG_FILE}"
+	fi
 }
+
 #####
 # Copy directory to output directory.
 # Parameters:
 # $1 - Source directory
 #####
 copy_dir() {
-local src_dir="${1%/}/"
-local dst_dir="${GLOBAL_OUTPUT_DIR}${src_dir}"
-if [[ -d "${src_dir}" ]]; then
-echo "[INFO]: Copying directory [${src_dir}] to [${dst_dir}]." >> "${GLOBAL_LOG_FILE}"
-create_dir "${dst_dir}"
-if [[ -d "${dst_dir}" ]]; then
-run_command "cp -rp ${src_dir}* ${dst_dir}" || echo "[WARN]: Unable to copy directory [${src_dir}] to [${dst_dir}]." >> "${GLOBAL_LOG_FILE}"
-fi
-else
-echo "[WARN]: Unable to copy [${src_dir}]. Directory not found." >> "${GLOBAL_LOG_FILE}"
-warning_flag=1
-fi
+	local src_dir="${1%/}/"
+	local dst_dir="${GLOBAL_OUTPUT_DIR}${src_dir}"
+
+	if [[ -d "${src_dir}" ]]; then
+		echo "[INFO]: Copying directory [${src_dir}] to [${dst_dir}]." >> "${GLOBAL_LOG_FILE}"
+		create_dir "${dst_dir}"
+
+		if [[ -d "${dst_dir}" ]]; then
+			run_command "cp -rp ${src_dir}* ${dst_dir}" || echo "[WARN]: Unable to copy directory [${src_dir}] to [${dst_dir}]." >> "${GLOBAL_LOG_FILE}"
+		fi
+	else
+		echo "[WARN]: Unable to copy [${src_dir}]. Directory not found." >> "${GLOBAL_LOG_FILE}"
+		warning_flag=1
+	fi
 }
+
 #####
 # Copy file to output directory.
 # Parameters:
 # $1 - Source file
 #####
 copy_file() {
-local src_file="$1"
-local dst_file="${GLOBAL_OUTPUT_DIR}${src_file}"
-local dst_dir=$(dirname "${dst_file}")
-if [[ -r "${src_file}" ]]; then
-echo "[INFO]: Copying file [${src_file}] to [${dst_file}]." >> "${GLOBAL_LOG_FILE}"
-create_dir "${dst_dir}"
-if [[ -d "${dst_dir}" ]]; then
-run_command "cp -p ${src_file} ${dst_file}" || echo "[WARN]: Unable to copy file [${src_file}] to [${dst_file}]." >> "${GLOBAL_LOG_FILE}"
-fi
-else
-echo "[WARN]: Unable to copy [${src_file}]. File not found." >> "${GLOBAL_LOG_FILE}"
-warning_flag=1
-fi
+	local src_file="$1"
+	local dst_file="${GLOBAL_OUTPUT_DIR}${src_file}"
+	local dst_dir=$(dirname "${dst_file}")
+	if [[ -r "${src_file}" ]]; then
+		echo "[INFO]: Copying file [${src_file}] to [${dst_file}]." >> "${GLOBAL_LOG_FILE}"
+		create_dir "${dst_dir}"
+		if [[ -d "${dst_dir}" ]]; then
+			run_command "cp -p ${src_file} ${dst_file}" || echo "[WARN]: Unable to copy file [${src_file}] to [${dst_file}]." >> "${GLOBAL_LOG_FILE}"
+		fi
+	else
+		echo "[WARN]: Unable to copy [${src_file}]. File not found." >> "${GLOBAL_LOG_FILE}"
+		warning_flag=1
+	fi
 }
+
 #####
 # Copy command output to output directory.
 # Parameters:
@@ -244,131 +257,152 @@ echo "[ERROR]: Unable to clean up output directory [${GLOBAL_OUTPUT_DIR}]. This 
 fi
 fi
 }
+
+
 #####
 # Gather system info.
 # Parameters:
 # None
 #####
 gather_info() {
-# copy /proc files
-if [[ -d "/proc" ]]; then
-for proc_file in ${proc_files}; do
-copy_file "/proc/${proc_file}"
-done
-else
-echo "[WARN]: Unable to gather info from [/proc/]. Directory not found." >> "${GLOBAL_LOG_FILE}"
-warning_flag=1
-fi
-# copy /etc files and directories
-if [[ -d "/etc" ]]; then
-for etc_file in ${etc_files}; do
-copy_file "/etc/${etc_file}"
-done
-for etc_dir in ${etc_dirs}; do
-copy_dir "/etc/${etc_dir}"
-done
-else
-echo "[WARN]: Unable to gather info from [/etc/]. Directory not found." >> "${GLOBAL_LOG_FILE}"
-warning_flag=1
-fi
-# copy other files
-for other_files_item in ${other_files}; do
-other_files_dir=$(echo ${other_files_item} | awk -F\: '{ print $1 }')
-other_files_names=$(echo ${other_files_item} | awk -F\: '{ print $2 }' | sed "s;,; ;g")
-if [[ -d "${other_files_dir}" ]]; then
-for other_files_name in ${other_files_names}; do
-copy_file "${other_files_dir}/${other_files_name}"
-done
-else
-echo "[WARN]: Unable to gather info from [${other_files_dir}/]. Directory not found." >> "${GLOBAL_LOG_FILE}"
-warning_flag=1
-fi
-done
-# copy tuned profiles and config
-if [[ "${os_version}" -eq 6 ]]; then
-copy_dir "/etc/tune-profiles"
-else
-copy_dir "/usr/lib/tuned"
-copy_dir "/etc/tuned"
-fi
-copy_commands
-tar_files
-if [[ ${warning_flag} -eq 1 || ${error_flag} -eq 1 ]]; then
-echo "[INFO]: ----------" >> "${GLOBAL_LOG_FILE}"
-if [[ ${warning_flag} -eq 1 ]]; then
-echo "[INFO]: WARNINGs found. Please see above for more details." >> "${GLOBAL_LOG_FILE}"
-fi
-if [[ ${error_flag} -eq 1 ]]; then
-echo -e "[INFO]: ERRORs found. Please see above for more details." >> "${GLOBAL_LOG_FILE}"
-echo -e "Errors found. Please see [${GLOBAL_LOG_FILE}] for more details.\n"
-fi
-fi
+	# copy /proc files
+#	if [[ -d "/proc" ]]; then
+#		for proc_file in ${proc_files}; do
+#			copy_file "/proc/${proc_file}"
+#		done
+#	else
+#		echo "[WARN]: Unable to gather info from [/proc/]. Directory not found." >> "${GLOBAL_LOG_FILE}"
+#	warning_flag=1
+#	fi
+
+	# copy /etc files and directories
+#	if [[ -d "/etc" ]]; then
+#		for etc_file in ${etc_files}; do
+#			copy_file "/etc/${etc_file}"
+#		done
+	
+#	for etc_dir in ${etc_dirs}; do
+#		copy_dir "/etc/${etc_dir}"
+#	done
+#	else
+#		echo "[WARN]: Unable to gather info from [/etc/]. Directory not found." >> "${GLOBAL_LOG_FILE}"
+#		warning_flag=1
+#	fi
+
+	# copy other files
+
+#	for other_files_item in ${other_files}; do
+#		other_files_dir=$(echo ${other_files_item} | awk -F\: '{ print $1 }')
+#		other_files_names=$(echo ${other_files_item} | awk -F\: '{ print $2 }' | sed "s;,; ;g")
+
+#		if [[ -d "${other_files_dir}" ]]; then
+#			for other_files_name in ${other_files_names}; do
+#				copy_file "${other_files_dir}/${other_files_name}"
+#			done
+#		else
+#			echo "[WARN]: Unable to gather info from [${other_files_dir}/]. Directory not found." >> "${GLOBAL_LOG_FILE}"
+#			warning_flag=1
+#		fi
+#	done
+	# copy tuned profiles and config
+#	if [[ "${os_version}" -eq 6 ]]; then
+#		copy_dir "/etc/tune-profiles"
+#	else
+#		copy_dir "/usr/lib/tuned"
+#		copy_dir "/etc/tuned"
+#	fi
+	
+	copy_commands
+	tar_files
+	if [[ ${warning_flag} -eq 1 || ${error_flag} -eq 1 ]]; then
+		echo "[INFO]: ----------" >> "${GLOBAL_LOG_FILE}"
+	
+		if [[ ${warning_flag} -eq 1 ]]; then
+			echo "[INFO]: WARNINGs found. Please see above for more details." >> "${GLOBAL_LOG_FILE}"
+		fi
+		
+		if [[ ${error_flag} -eq 1 ]]; then
+			echo -e "[INFO]: ERRORs found. Please see above for more details." >> "${GLOBAL_LOG_FILE}"
+			echo -e "Errors found. Please see [${GLOBAL_LOG_FILE}] for more details.\n"
+		fi
+	fi
 }
+
 #####
 # Initialize the program and validate the environment.
 # Parameters:
 # None
 #####
 initialize() {
-check_os
-if [[ -f "${GLOBAL_TAR_FILE}" ]]; then
-echo -e "\n[ERROR]: Tarball [${GLOBAL_TAR_FILE}] already exists. Exiting...\n"
-exit 125
-fi
-if [[ -f "${GLOBAL_LOG_FILE}" ]]; then
-echo -e "\n[ERROR]: Log file [${GLOBAL_LOG_FILE}] already exists. Exiting...\n"
-exit 125
-fi
-if [[ -f "${GLOBAL_OUTPUT_DIR}" ]]; then
-echo -e "\n[ERROR]: Output directory [${GLOBAL_OUTPUT_DIR}] already exists. Exiting...\n"
-exit 125
-fi
-echo "[INFO]: Script Name: ${GLOBAL_SCRIPT_NAME}" > "${GLOBAL_LOG_FILE}"
-echo "[INFO]: Script Version: ${GLOBAL_SCRIPT_VERSION}" >> "${GLOBAL_LOG_FILE}"
-echo "[INFO]: Script Build: ${GLOBAL_SCRIPT_BUILD_ID}" >> "${GLOBAL_LOG_FILE}"
-echo "[INFO]: Copyright (c) 2022 SAS Institute Inc." >> "${GLOBAL_LOG_FILE}"
-echo "[INFO]: Unpublished - All Rights Reserved." >> "${GLOBAL_LOG_FILE}"
-echo "[INFO]: ----------" >> "${GLOBAL_LOG_FILE}"
-if [[ "${GLOBAL_FHOST}" == "hostname: Name or service not known" ]]; then
-echo "[INFO]: Hostname: ${GLOBAL_SHOST}" >> "${GLOBAL_LOG_FILE}"
-else
-echo "[INFO]: Hostname: ${GLOBAL_FHOST}" >> "${GLOBAL_LOG_FILE}"
-fi
-echo "[INFO]: Date: $(date)" >> "${GLOBAL_LOG_FILE}"
-echo "[INFO]: Run ID: ${GLOBAL_DATETIME}" >> "${GLOBAL_LOG_FILE}"
-echo "[INFO]: OS Version: ${os_full}" >> "${GLOBAL_LOG_FILE}"
-echo "[INFO]: Script Dir: ${GLOBAL_SCRIPT_DIR}/" >> "${GLOBAL_LOG_FILE}"
-echo "[INFO]: Output Dir: ${GLOBAL_OUTPUT_DIR}/" >> "${GLOBAL_LOG_FILE}"
-echo "[INFO]: ----------" >> "${GLOBAL_LOG_FILE}"
-echo "[INFO]: Gathering system information..." >> "${GLOBAL_LOG_FILE}"
-echo -e "\nGathering system information...\n"
-create_dir "${GLOBAL_OUTPUT_DIR}"
-if [[ ! -d "${GLOBAL_OUTPUT_DIR}" ]]; then
-echo ""
-echo "[ERROR]: Unable to create output directory [${GLOBAL_OUTPUT_DIR}]. Exiting...\n" | tee -a "${GLOBAL_LOG_FILE}"
-exit 1
-fi
+	check_os
+	if [[ -f "${GLOBAL_TAR_FILE}" ]]; then
+		echo -e "\n[ERROR]: Tarball [${GLOBAL_TAR_FILE}] already exists. Exiting...\n"
+		exit 125
+	fi
+	
+	if [[ -f "${GLOBAL_LOG_FILE}" ]]; then
+		echo -e "\n[ERROR]: Log file [${GLOBAL_LOG_FILE}] already exists. Exiting...\n"
+		exit 125
+	fi
+	
+	if [[ -f "${GLOBAL_OUTPUT_DIR}" ]]; then
+		echo -e "\n[ERROR]: Output directory [${GLOBAL_OUTPUT_DIR}] already exists. Exiting...\n"
+		exit 125
+	fi
+	
+	echo "[INFO]: Script Name: ${GLOBAL_SCRIPT_NAME}" > "${GLOBAL_LOG_FILE}"
+	echo "[INFO]: Script Version: ${GLOBAL_SCRIPT_VERSION}" >> "${GLOBAL_LOG_FILE}"
+	echo "[INFO]: Script Build: ${GLOBAL_SCRIPT_BUILD_ID}" >> "${GLOBAL_LOG_FILE}"
+	echo "[INFO]: Copyright (c) 2022 SAS Institute Inc." >> "${GLOBAL_LOG_FILE}"
+	echo "[INFO]: Unpublished - All Rights Reserved." >> "${GLOBAL_LOG_FILE}"
+	echo "[INFO]: ----------" >> "${GLOBAL_LOG_FILE}"
+	
+	if [[ "${GLOBAL_FHOST}" == "hostname: Name or service not known" ]]; then
+		echo "[INFO]: Hostname: ${GLOBAL_SHOST}" >> "${GLOBAL_LOG_FILE}"
+	else
+		echo "[INFO]: Hostname: ${GLOBAL_FHOST}" >> "${GLOBAL_LOG_FILE}"
+	fi
+
+	echo "[INFO]: Date: $(date)" >> "${GLOBAL_LOG_FILE}"
+	echo "[INFO]: Run ID: ${GLOBAL_DATETIME}" >> "${GLOBAL_LOG_FILE}"
+	echo "[INFO]: OS Version: ${os_full}" >> "${GLOBAL_LOG_FILE}"
+	echo "[INFO]: Script Dir: ${GLOBAL_SCRIPT_DIR}/" >> "${GLOBAL_LOG_FILE}"
+	echo "[INFO]: Output Dir: ${GLOBAL_OUTPUT_DIR}/" >> "${GLOBAL_LOG_FILE}"
+	echo "[INFO]: ----------" >> "${GLOBAL_LOG_FILE}"
+	echo "[INFO]: Gathering system information..." >> "${GLOBAL_LOG_FILE}"
+	echo -e "\nGathering system information...\n"
+	create_dir "${GLOBAL_OUTPUT_DIR}"
+	
+	if [[ ! -d "${GLOBAL_OUTPUT_DIR}" ]]; then
+		echo ""
+		echo "[ERROR]: Unable to create output directory [${GLOBAL_OUTPUT_DIR}]. Exiting...\n" | tee -a "${GLOBAL_LOG_FILE}"
+		exit 1
+	fi
 }
+
 # ====================================================================
 # MAIN SECTION
 # ====================================================================
 if [[ $# -gt 1 ]]; then
-echo -e "\n[ERROR]: Too many parameters given. Exiting..."
-show_usage
+	echo -e "\n[ERROR]: Too many parameters given. Exiting..."
+	show_usage
 fi
+
 if [[ $# -eq 0 ]]; then
-# Verify that this script is being ran as root
-if [[ $EUID -ne 0 ]]; then
-echo -e "\n[ERROR]: This script must be run as root."
-show_usage
-fi
-initialize
-gather_info
+	# Verify that this script is being ran as root
+	if [[ $EUID -ne 0 ]]; then
+		echo -e "\n[ERROR]: This script must be run as root."
+		show_usage
+	fi
+	
+	initialize
+	gather_info
 else
-case "$1" in
--h|--h|-help|--help) show_usage ;;
--v|--v|-version|--version) show_version ;;
-*) echo -e "\n[ERROR]: Invalid parameter. Exiting...\n"; exit 125 ;;
-esac
+	case "$1" in
+		-h|--h|-help|--help) show_usage ;;
+		-v|--v|-version|--version) show_version ;;
+		*) echo -e "\n[ERROR]: Invalid parameter. Exiting...\n"; exit 125 ;;
+	esac
 fi
+
 exit "${error_flag}"
